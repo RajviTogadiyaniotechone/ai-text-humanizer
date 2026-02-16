@@ -4,10 +4,16 @@ import re
 from nltk.corpus import wordnet
 from textblob import TextBlob
 
-# NLTK data should be pre-installed or handled externally to avoid hangs
-# nltk.download('wordnet')
-# nltk.download('punkt')
-# nltk.download('averaged_perceptron_tagger')
+# Download necessary NLTK data (required for first-run on server)
+try:
+    nltk.data.find('tokenizers/punkt')
+    nltk.data.find('corpora/wordnet')
+    nltk.data.find('taggers/averaged_perceptron_tagger')
+except LookupError:
+    nltk.download('punkt')
+    nltk.download('wordnet')
+    nltk.download('averaged_perceptron_tagger')
+    nltk.download('punkt_tab') # Newer NLTK versions might need this
 
 class NLPHumanizer:
     def __init__(self):
