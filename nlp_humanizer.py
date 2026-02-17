@@ -5,15 +5,24 @@ from nltk.corpus import wordnet
 from textblob import TextBlob
 
 # Download necessary NLTK data (required for first-run on server)
-try:
-    nltk.data.find('tokenizers/punkt')
-    nltk.data.find('corpora/wordnet')
-    nltk.data.find('taggers/averaged_perceptron_tagger')
-except LookupError:
-    nltk.download('punkt')
-    nltk.download('wordnet')
-    nltk.download('averaged_perceptron_tagger')
-    nltk.download('punkt_tab') # Newer NLTK versions might need this
+def download_nltk_resources():
+    resources = [
+        'tokenizers/punkt',
+        'corpora/wordnet',
+        'taggers/averaged_perceptron_tagger',
+        'taggers/averaged_perceptron_tagger_eng', # New REQUIRED name for 3.9+
+        'tokenizers/punkt_tab'
+    ]
+    
+    for res in resources:
+        try:
+            nltk.data.find(res)
+        except LookupError:
+            # Extract just the package name from the path (e.g., 'tokenizers/punkt' -> 'punkt')
+            pkg = res.split('/')[-1]
+            nltk.download(pkg)
+
+download_nltk_resources()
 
 class NLPHumanizer:
     def __init__(self):
