@@ -51,10 +51,5 @@ with col2:
         else:
             st.info("Paste some text to get started.")
 
-st.markdown("---")
-st.markdown("### How it works")
-st.markdown("""
-1.  **Vocabulary Simplification**: Replaces 'SAT words' (e.g., *utilize, leverage*) with simple daily language.
-2.  **Contraction Enforcement**: Forces *do not* -> *don't*, *it is* -> *it's*.
-3.  **Conversational Noise**: Adds words humans use subconsciously like *basically, actually, honestly*.
-""")
+
+
