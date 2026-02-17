@@ -3,7 +3,7 @@ from nlp_humanizer import NLPHumanizer
 
 st.set_page_config(page_title="Free AI Humanizer (NLP)", layout="wide")
 
-st.title("🧠 AI Text Humanizer ")
+st.markdown("# 🧠 AI Text Humanizer ")
 
 
 # Initialize Logic
@@ -50,6 +50,7 @@ with col2:
                 st.caption(f"Original word count: {original_words} | New word count: {new_words}")
         else:
             st.info("Paste some text to get started.")
+
 
 
 
