@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+ENV/
+debug_output.txt
+test_debug.py
+test_reproduce_issue.py
+.streamlit/
+**/brain/
+**/logs/
