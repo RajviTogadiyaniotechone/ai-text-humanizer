@@ -24,61 +24,63 @@ def download_nltk_resources():
 
 download_nltk_resources()
 
+download_nltk_resources()
+
 class NLPHumanizer:
     def __init__(self):
         self.common_synonyms = {
-            "utilize": ["use", "employ"],
-            "leverage": ["use", "apply"],
-            "comprehensive": ["complete", "full", "thorough"],
-            "facilitate": ["help", "ease", "assist"],
-            "endeavor": ["effort", "try", "attempt"],
-            "commence": ["start", "begin"],
-            "terminate": ["end", "stop", "finish"],
-            "ascertain": ["determine", "find out", "check"],
-            "moreover": ["also", "additionally"],
-            "furthermore": ["also", "plus", "in addition"],
-            "consequently": ["so", "as a result", "therefore"],
-            "nevertheless": ["however", "still", "even so"],
-            "however": ["but", "yet"],
-            "therefore": ["so", "hence", "consequently"],
-            "thus": ["so", "hence"],
-            "receive": ["get", "obtain"],
-            "assist": ["help", "support"],
-            "inform": ["tell", "notify"],
-            "obtain": ["get", "acquire"],
-            "provide": ["give", "offer"],
-            "request": ["ask for", "seek"],
-            "require": ["need", "demand"],
-            "purchase": ["buy", "get"],
-            "construct": ["build", "make"],
-            "navigate": ["go through", "manage"],
-            "demonstrate": ["show", "prove"],
-            "approximately": ["about", "roughly"],
-            "subsequently": ["later", "then"],
-            "initially": ["at first", "first"],
-            "ultimately": ["finally", "in the end"],
-            "essential": ["key", "needed", "vital"],
-            "important": ["key", "major", "main"],
-            "significant": ["big", "major", "notable"],
-            "effective": ["useful", "helpful", "good"],
-            "pivotal": ["key", "crucial"],
-            "paramount": ["main", "top"],
-            "myriad": ["many", "lots of"],
-            "optimize": ["improve", "better"],
-            "implement": ["start", "use", "do"],
-            "strategy": ["plan", "way"],
-            "solution": ["way", "fix"],
-            "innovative": ["new", "fresh"],
-            "advanced": ["better", "high level"],
-            "integrated": ["combined", "joined"],
-            "traditional": ["old", "usual"],
-            "modern": ["new", "recent"],
+            "utilize": ["use", "employ", "work with"],
+            "leverage": ["use", "apply", "make use of"],
+            "comprehensive": ["complete", "full", "total"],
+            "facilitate": ["help", "ease", "assist", "make easier"],
+            "endeavor": ["effort", "try", "attempt", "push"],
+            "commence": ["start", "begin", "kick off"],
+            "terminate": ["end", "stop", "finish", "cut"],
+            "ascertain": ["determine", "find out", "check", "see"],
+            "moreover": ["also", "besides", "plus", "in addition"],
+            "furthermore": ["also", "plus", "and", "besides"],
+            "consequently": ["so", "as a result", "that's why"],
+            "nevertheless": ["however", "still", "even so", "but"],
+            "however": ["but", "yet", "though"],
+            "therefore": ["so", "hence", "that's why"],
+            "thus": ["so", "hence", "this way"],
+            "receive": ["get", "take", "obtain"],
+            "assist": ["help", "support", "aid"],
+            "inform": ["tell", "notify", "update"],
+            "obtain": ["get", "acquire", "grab"],
+            "provide": ["give", "offer", "show"],
+            "request": ["ask for", "seek", "want"],
+            "require": ["need", "demand", "want"],
+            "purchase": ["buy", "get", "pick up"],
+            "construct": ["build", "make", "create"],
+            "navigate": ["go through", "manage", "get through"],
+            "demonstrate": ["show", "prove", "display"],
+            "approximately": ["about", "roughly", "around"],
+            "subsequently": ["later", "then", "after that"],
+            "initially": ["at first", "first", "to start"],
+            "ultimately": ["finally", "in the end", "basically"],
+            "essential": ["key", "needed", "must-have"],
+            "important": ["key", "big", "major"],
+            "significant": ["big", "major", "notable", "large"],
+            "effective": ["useful", "helpful", "good", "strong"],
+            "pivotal": ["key", "huge"],
+            "paramount": ["main", "top", "first"],
+            "myriad": ["many", "lots of", "a ton of"],
+            "optimize": ["improve", "better", "fix up"],
+            "implement": ["start", "use", "do", "set up"],
+            "strategy": ["plan", "way", "approach"],
+            "solution": ["way", "fix", "answer"],
+            "innovative": ["new", "fresh", "cool"],
+            "advanced": ["better", "high level", "new"],
+            "integrated": ["combined", "joined", "linked"],
+            "traditional": ["old", "usual", "normal"],
+            "modern": ["new", "recent", "today's"],
         }
         
         # Words that should never be used in a professional context
         self.banned_words = {
-            "bomb", "killing", "murder", "attack", "destroy", "violence", 
-            "threat", "dangerous", "terror", "harmful", "toxic", "lethal"
+            "bomb", "killing", "murder", "attack", "destroy", "violence","leverage","myriad", "paramount",
+            "pivotal", "paradigm", "synergy", "threat", "dangerous", "terror", "harmful", "toxic", "lethal"
         }
         
         self.filler_words = [
@@ -100,38 +102,58 @@ class NLPHumanizer:
             r"\bhowever\b": "but",
         }
 
+    # In nlp_humanizer.py, replace the _get_synonym method:
+
     def _get_synonym(self, word, pos=None):
-        """Get a suitable synonym, preferring common words."""
-        synonyms = []
+        """Get a contextually appropriate synonym."""
         word_lower = word.lower()
         
-        for syn in wordnet.synsets(word):
+        # First check if word is in banned list
+        if word_lower in self.banned_words:
+            return "[FILTERED]"
+        
+        # Get WordNet synsets
+        synsets = wordnet.synsets(word)
+        if not synsets:
+            return word
+            
+        synonyms = []
+        for syn in synsets:
+            # Filter by part of speech if provided
             if pos:
                 wn_pos = None
                 if pos.startswith('J'): wn_pos = wordnet.ADJ
                 elif pos.startswith('V'): wn_pos = wordnet.VERB
                 elif pos.startswith('N'): wn_pos = wordnet.NOUN
                 elif pos.startswith('R'): wn_pos = wordnet.ADV
-                if wn_pos and syn.pos() != wn_pos: continue
-
+                if wn_pos and syn.pos() != wn_pos:
+                    continue
+            
+            # Get lemmas
             for lemma in syn.lemmas():
                 name = lemma.name().replace('_', ' ')
-                # Filter out original word, multi-word, and banned words
-                if name.lower() != word_lower and name.lower() not in self.banned_words:
-                    if len(name.split()) > 2: continue
+                name_lower = name.lower()
+                
+                # Quality filters
+                if (name_lower != word_lower and 
+                    name_lower not in self.banned_words and
+                    len(name.split()) <= 2 and  # No multi-word phrases
+                    len(name) >= 3 and  # Too short words often awkward
+                    "'" not in name and  # Avoid contractions
+                    not name_lower.endswith(('ing', 'ed'))):  # Avoid verb forms that sound awkward
                     synonyms.append(name)
         
         if not synonyms:
             return word
-            
-        # Prioritize synonyms that are not too long and not too "random"
-        # We can sort by length or just pick a random one from the top N
-        unique_syns = list(set(synonyms))
-        # Sort by length similarity to original word to maintain "similar" feel
-        unique_syns.sort(key=lambda s: abs(len(s) - len(word)))
         
-        # Pick from the top 3 closest matches in length (usually more "similar")
-        return random.choice(unique_syns[:3])
+        # Score synonyms by commonness (rough heuristic - shorter = more common)
+        synonyms.sort(key=lambda x: (len(x), x))  # Sort by length, then alphabetically
+        
+        # Pick from top 3 most common synonyms
+        top_synonyms = synonyms[:3]
+        if top_synonyms:
+            return random.choice(top_synonyms)
+        return word
 
     def _replace_phrases(self, text):
         """Replace common AI multi-word phrases."""
@@ -140,7 +162,6 @@ class NLPHumanizer:
             r"\bplay a crucial role\b": "are super important",
             r"\bplays a crucial role\b": "is super important",
             r"\bit is important to note\b": "worth mentioning",
-            r"\bdelve deep into\b": "dig into",
             r"\ba wide range of\b": "lots of",
             r"\bdue to the fact that\b": "because",
             r"\bfirst and foremost\b": "first off",
@@ -178,6 +199,15 @@ class NLPHumanizer:
             r"\bin connection with\b": "on",
             r"\bby means of\b": "using",
             r"\bfor the purpose of\b": "to",
+            r"\bit is worth noting that\b": "keep in mind that",
+            r"\bat an accelerated pace\b": "quickly",
+            r"\bin the near future\b": "soon",
+            r"\bin order to\b": "to",
+            r"\btake into consideration\b": "consider",
+            r"\bundergo a transformation\b": "change",
+            r"\ba variety of\b": "different",
+            r"\bprovide guidance on\b": "help with",
+            r"\bincrease the efficiency of\b": "speed up",
         }
         for pattern, repl in phrases.items():
             text = re.sub(pattern, repl, text, flags=re.IGNORECASE)
@@ -472,11 +502,44 @@ class NLPHumanizer:
             new_sentences.append(sent)
         return " ".join(new_sentences)
 
-    def humanize(self, text, messiness=0.5, synonym_freq=0.5, clean_mode=True):
+    def _is_valid_replacement(self, original, replacement):
+        """Check if replacement is valid and makes sense."""
+        if not replacement or replacement == original:
+            return False
+        
+        # Check length difference isn't too extreme
+        if abs(len(replacement) - len(original)) > 5:
+            return False
+        
+        # Check replacement isn't just original with extra letters
+        if original in replacement and len(replacement) > len(original) + 2:
+            return False
+        
+        # Check for obvious misspellings (simple check)
+        common_misspellings = ['teh', 'recieve', 'seperate', 'definately']
+        if replacement.lower() in common_misspellings:
+            return False
+        
+        return True
+
+    def humanize(self, text, messiness=0.3, synonym_freq=0.3, clean_mode=True):
         """Preserve original line structure perfectly."""
         if not text:
             return ""
             
+        """
+        Transform AI text to human-like text.
+        
+        Args:
+            text: Input text
+            messiness: 0.0-1.0 - How much to alter structure (lower = safer)
+            synonym_freq: 0.0-1.0 - How often to replace words (lower = safer)
+            clean_mode: If True, avoid informal contractions and slang
+        """
+        # Cap values for safety
+        messiness = min(messiness, 0.3)  # Max 40% structural changes
+        synonym_freq = min(synonym_freq, 0.3)  # Max 30% word replacement
+    
         # Use splitlines(True) to keep all original newline characters (\n, \r\n, etc.)
         lines = text.splitlines(keepends=True)
         humanized_lines = []
@@ -501,7 +564,25 @@ class NLPHumanizer:
                 
         return "".join(humanized_lines)
 
-    def _humanize_internal(self, text, messiness=0.5, synonym_freq=0.5, clean_mode=True):
+    def _cleanup_text(self, text):
+        """Clean up common issues."""
+        # Fix double spaces
+        text = re.sub(r' +', ' ', text)
+        
+        # Fix spacing around punctuation
+        text = re.sub(r'\s+([.,!?;:])', r'\1', text)
+        
+        # Ensure sentences start with capital letter
+        sentences = nltk.sent_tokenize(text)
+        cleaned = []
+        for sent in sentences:
+            if sent and sent[0].isalpha():
+                sent = sent[0].upper() + sent[1:]
+            cleaned.append(sent)
+        
+        return ' '.join(cleaned)
+
+    def _humanize_internal(self, text, messiness=0.3, synonym_freq=0.3, clean_mode=True):
         """Core humanization filter logic."""
         
         # 1. AI Phrase Replacement
@@ -516,7 +597,9 @@ class NLPHumanizer:
             text = self._restructure_sentences(text)
 
         # 4. Vocabulary Simplification (POS Aware)
-        text = self.simplify_vocabulary(text, frequency=synonym_freq)
+        # Low frequency for clean mode to keep it natural
+        actual_freq = min(synonym_freq, 0.3) if clean_mode else synonym_freq
+        text = self.simplify_vocabulary(text, frequency=actual_freq)
         
         # 5. Burstiness
         text = self._apply_burstiness(text)
