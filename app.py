@@ -39,11 +39,34 @@ st.markdown("""
     
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
+    
+    .humanized-highlight {
+        background-color: #d4edda !important;
+        color: #155724 !important;
+        padding: 2px 4px !important;
+        border-radius: 4px !important;
+        border: 1px solid #c3e6cb !important;
+        display: inline-block !important;
+        margin: 1px 0 !important;
+        font-weight: 500 !important;
+    }
+    
+    .output-container {
+        height: 350px; 
+        overflow-y: auto; 
+        padding: 1.5rem; 
+        border: 1px solid #E0E4E8; 
+        border-radius: 12px; 
+        background-color: #FFFFFF;
+        color: #1E1E1E;
+        line-height: 1.6;
+        font-size: 1rem;
+        box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+    }
 </style>
 """, unsafe_allow_html=True)
 
 # Logic Initialization
-@st.cache_resource
 def get_humanizer():
     return NLPHumanizer()
 
@@ -56,6 +79,8 @@ if "human_output" not in st.session_state:
     st.session_state.human_output = ""
 if "human_output_editable" not in st.session_state:
     st.session_state.human_output_editable = ""
+if "human_output_highlighted" not in st.session_state:
+    st.session_state.human_output_highlighted = ""
 
 # --- Humanize Logic Callback ---
 def run_humanization():
@@ -75,6 +100,8 @@ def run_humanization():
             st.session_state.human_output = result
             # Set the keyed widget value BEFORE it is rendered
             st.session_state.human_output_editable = result
+            # Generate highlighted version
+            st.session_state.human_output_highlighted = humanizer.get_highlighted_diff(input_text, result)
             st.session_state.success_toast = True
         except Exception as e:
             st.session_state.error_msg = str(e)
@@ -168,15 +195,24 @@ with col2:
     else:
         st.button("📋 Copy to Clipboard", disabled=True, use_container_width=True)
 
-    st.text_area(
-        "",
-        height=350,
-        placeholder="Humanized text will appear here...",
-        key="human_output_editable",
-        label_visibility="collapsed",
-        disabled=False
-    )
-    st.markdown(f'<div style="text-align: right; color: #666; font-size: 0.8rem;">{len(st.session_state.human_output_editable)} characters</div>', unsafe_allow_html=True)
+    if st.session_state.human_output:
+        st.markdown(f"""
+            <div class="output-container">
+                {st.session_state.human_output_highlighted or st.session_state.human_output}
+            </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.text_area(
+            "",
+            height=350,
+            placeholder="Humanized text will appear here...",
+            key="human_output_placeholder",
+            label_visibility="collapsed",
+            disabled=True
+        )
+    
+    char_count = len(st.session_state.human_output)
+    st.markdown(f'<div style="text-align: right; color: #666; font-size: 0.8rem;">{char_count} characters</div>', unsafe_allow_html=True)
 
 # Bottom Action Button
 st.markdown('<div style="margin-top: 2rem;"></div>', unsafe_allow_html=True)
