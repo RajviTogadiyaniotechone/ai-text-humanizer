@@ -103,10 +103,6 @@ class NLPHumanizer:
             "I guess,", "to be fair,", "strangely enough,", "look,"
         ]
         
-        self.personal_markers = [
-            "Personally, I think",
-            "I've noticed that", "It seems that",
-        ]
         
         self.transitions = {
             r"\bfurthermore\b": "also",
@@ -453,18 +449,6 @@ class NLPHumanizer:
                 new_sentences.append(sent)
         return " ".join(new_sentences)
 
-    def _add_personal_touch(self, text):
-        """Inject first-person perspective markers."""
-        sentences = nltk.sent_tokenize(text)
-        if not sentences:
-            return text
-            
-        # Only inject once or twice to avoid overdoing it
-        idx = random.randint(0, len(sentences) - 1)
-        marker = random.choice(self.personal_markers)
-        
-        sentences[idx] = f"{marker} {sentences[idx][0].lower() + sentences[idx][1:]}"
-        return " ".join(sentences)
 
     def _restructure_sentences(self, text):
         """Advanced sentence restructuring to break standard AI syntax."""
@@ -638,9 +622,6 @@ class NLPHumanizer:
         # 5. Burstiness
         text = self._apply_burstiness(text)
 
-        # 6. Personal Touch
-        if random.random() < messiness:
-            text = self._add_personal_touch(text)
 
         # 7. Structure Breaking (Participles)
         text = self._break_participles(text)
@@ -701,5 +682,3 @@ class NLPHumanizer:
                         html_output.append(token.replace('\n', '<br>'))
             
         return f'<div style="font-family: inherit;">{"".join(html_output)}</div>'
-
-
