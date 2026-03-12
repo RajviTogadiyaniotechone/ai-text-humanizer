@@ -75,6 +75,21 @@ class NLPHumanizer:
             "integrated": ["combined", "joined", "linked"],
             "traditional": ["old", "usual", "normal"],
             "modern": ["new", "recent", "today's"],
+            "functionality": ["features", "tools", "way it works"],
+            "commence": ["start", "begin"],
+            "operation": ["task", "job", "work"],
+            "individual": ["person", "one"],
+            "additional": ["more", "extra"],
+            "substantial": ["large", "big", "solid"],
+            "regarding": ["about", "on"],
+            "concerning": ["about", "on"],
+        }
+        
+        # Stuffy words to avoid as synonyms
+        self.stuffy_words = {
+            "utilize", "leverage", "myriad", "paramount", "pivotal", "paradigm", 
+            "synergy", "commence", "endeavor", "facilitate", "ascertain", "moreover",
+            "furthermore", "consequently", "nevertheless", "subsequently"
         }
         
         # Words that should never be used in a professional context
@@ -132,25 +147,20 @@ class NLPHumanizer:
             # Get lemmas
             for lemma in syn.lemmas():
                 name = lemma.name().replace('_', ' ')
-                name_lower = name.lower()
                 
                 # Quality filters
-                if (name_lower != word_lower and 
-                    name_lower not in self.banned_words and
-                    len(name.split()) <= 2 and  # No multi-word phrases
-                    len(name) >= 3 and  # Too short words often awkward
-                    "'" not in name and  # Avoid contractions
-                    not name_lower.endswith(('ing', 'ed'))):  # Avoid verb forms that sound awkward
+                if self._is_valid_replacement(word, name):
                     synonyms.append(name)
         
         if not synonyms:
             return word
         
         # Score synonyms by commonness (rough heuristic - shorter = more common)
-        synonyms.sort(key=lambda x: (len(x), x))  # Sort by length, then alphabetically
+        # We prefer words that are shorter than the original
+        synonyms.sort(key=lambda x: (len(x), x))
         
-        # Pick from top 3 most common synonyms
-        top_synonyms = synonyms[:3]
+        # Pick from top 2 most common synonyms for better stability
+        top_synonyms = synonyms[:2]
         if top_synonyms:
             return random.choice(top_synonyms)
         return word
@@ -251,9 +261,10 @@ class NLPHumanizer:
                     new_sentence_words.append(replacement)
                     continue
                 
-                # 3. Target POS: Adjectives, Adverbs, Verbs, AND NOUNS
+                # 3. Target POS: Adjectives, Adverbs, Verbs
+                # We EXCLUDE Nouns (NN, NNS) from general WordNet replacement to preserve meaning
                 is_target_pos = (tag.startswith('JJ') or tag.startswith('RB') or 
-                               tag.startswith('VB') or tag.startswith('NN'))
+                               tag.startswith('VB'))
                 
                 if is_target_pos and len(word) > 3 and random.random() < frequency: 
                     synonym = self._get_synonym(word, pos=tag)
@@ -504,20 +515,43 @@ class NLPHumanizer:
 
     def _is_valid_replacement(self, original, replacement):
         """Check if replacement is valid and makes sense."""
-        if not replacement or replacement == original:
+        orig_lower = original.lower()
+        repl_lower = replacement.lower()
+        
+        if not replacement or repl_lower == orig_lower:
+            return False
+            
+        # Avoid banned words
+        if repl_lower in self.banned_words:
+            return False
+            
+        # Avoid "stuffy" or high-level words that make it sound more like AI
+        if repl_lower in self.stuffy_words:
             return False
         
-        # Check length difference isn't too extreme
-        if abs(len(replacement) - len(original)) > 5:
+        # No multi-word phrases from WordNet (often awkward)
+        if len(replacement.split()) > 1:
+            return False
+            
+        # Too short words are often awkward
+        if len(replacement) < 3:
+            return False
+            
+        # Avoid symbols/contractions
+        if "'" in replacement or "-" in replacement:
+            return False
+            
+        # Avoid synonyms that are significantly longer than the original
+        # Humans usually simplify, AI usually complexifies
+        if len(replacement) > len(original) + 1:
+            return False
+        
+        # Avoid verb forms that might clash grammatically (simple heuristic)
+        if orig_lower.endswith(('ing', 'ed')) and not repl_lower.endswith(('ing', 'ed')):
             return False
         
         # Check replacement isn't just original with extra letters
-        if original in replacement and len(replacement) > len(original) + 2:
-            return False
-        
-        # Check for obvious misspellings (simple check)
-        common_misspellings = ['teh', 'recieve', 'seperate', 'definately']
-        if replacement.lower() in common_misspellings:
+        if orig_lower in repl_lower and len(replacement) > len(original) + 2:
             return False
         
         return True
@@ -633,3 +667,37 @@ class NLPHumanizer:
         text = re.sub(r' +', ' ', text).strip() # Only collapse horizontal spaces
         
         return text
+
+    def get_highlighted_diff(self, original, humanized):
+        """
+        Compare original and humanized text and return HTML with additions highlighted.
+        """
+        import difflib
+        
+        # Split by words but preserve whitespace for better diffing
+        def tokenize(text):
+            return re.findall(r'\w+|[^\w\s]|\s+', text)
+
+        orig_tokens = tokenize(original)
+        hum_tokens = tokenize(humanized)
+        
+        matcher = difflib.SequenceMatcher(None, orig_tokens, hum_tokens)
+        html_output = []
+        
+        # Using a global CSS class 'humanized-highlight' defined in app.py
+        # Fallback inline style just in case CSS doesn't load
+        for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+            if tag == 'equal':
+                for i in range(j1, j2):
+                    token = hum_tokens[i]
+                    html_output.append(token.replace('\n', '<br>'))
+            elif tag in ('insert', 'replace'):
+                for i in range(j1, j2):
+                    token = hum_tokens[i]
+                    if token.strip():
+                        # We use class for main styling but add background inline as a fallback
+                        html_output.append(f'<span class="humanized-highlight" style="background-color: #d4edda !important;">{token}</span>')
+                    else:
+                        html_output.append(token.replace('\n', '<br>'))
+            
+        return f'<div style="font-family: inherit;">{"".join(html_output)}</div>'
