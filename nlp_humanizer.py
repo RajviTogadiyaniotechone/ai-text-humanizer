@@ -105,7 +105,7 @@ class NLPHumanizer:
         
         self.personal_markers = [
             "Personally, I think",
-            "I've noticed that", "It seems that","
+            "I've noticed that", "It seems that",
         ]
         
         self.transitions = {
@@ -701,4 +701,5 @@ class NLPHumanizer:
                         html_output.append(token.replace('\n', '<br>'))
             
         return f'<div style="font-family: inherit;">{"".join(html_output)}</div>'
+
 
